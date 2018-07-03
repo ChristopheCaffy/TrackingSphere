@@ -145,6 +145,7 @@ include_directories(
 add_executable(image_listener src/my_subscriber.cpp)
 add_executable(image_publisher src/my_publisher.cpp)
 add_executable(image_converter src/image_converter.cpp)
+add_executable(image_converter_RGB src/image_converter_RGB.cpp)
 
 
 ## Rename C++ executable without prefix
@@ -177,6 +178,10 @@ target_link_libraries(image_converter
    ${OpenCV_LIBRARIES}
 )
 
+target_link_libraries(image_converter_RGB
+   ${catkin_LIBRARIES}
+   ${OpenCV_LIBRARIES}
+)
 #############
 ## Install ##
 #############

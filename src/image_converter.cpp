@@ -21,7 +21,7 @@ class ImageConverter
   image_transport::Publisher image_pub_;
 
 public:
-  int min, max;
+  float min, max;
 
   ImageConverter()
     : it_(nh_)
@@ -29,9 +29,9 @@ public:
     // Subscrive to input video feed and publish output video feed
   //  image_sub_ = it_.subscribe("/left/rgb/image_rect_color", 1,
   //    &ImageConverter::imageCb, this);
-    image_sub_ = it_.subscribe("/right/depth_registered/image_raw", 1, &ImageConverter::imageCb, this);
+    image_sub_ = it_.subscribe("/left/depth_registered/image_raw", 1, &ImageConverter::imageCb, this);
 
-    image_pub_ = it_.advertise("/image_converter/output_video", 1);
+    image_pub_ = it_.advertise("/image_converter/output_video_depth", 1);
 
     min=0;
     max=1000000;
@@ -53,31 +53,35 @@ public:
     try
     {
       //cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-      cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
+      cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_32FC1);
     }
     catch (cv_bridge::Exception& e)
     {
       ROS_ERROR("cv_bridge exception: %s", e.what());
       return;
     }
-    unsigned short val=0.0;
+    float val=0.0;
     /// Convert it to gray
     cv::Mat src_gray(cv_ptr->image.rows,cv_ptr->image.cols, CV_8UC1);
     for(int i=1;i<cv_ptr->image.rows;i++){
         for(int j=1;j<cv_ptr->image.cols;j++){
             //ROS_INFO("%u ",src_gray.at<unsigned char>(i,j)=((float)cv_ptr->image.at<unsigned short>(i,j))*8000.0/255.0);
-            if(((float)cv_ptr->image.at<unsigned short>(i,j))*1000.0>min && ((float)cv_ptr->image.at<unsigned short>(i,j))*1000.0<max){
-                src_gray.at<unsigned char>(i,j)=((float)cv_ptr->image.at<unsigned short>(i,j))*1000.0;
+            if(((float)cv_ptr->image.at<float>(i,j))<4.0){
+                if(((float)cv_ptr->image.at<float>(i,j))>min && ((float)cv_ptr->image.at<float>(i,j))<max){
+                    src_gray.at<unsigned char>(i,j)=255;//((float)cv_ptr->image.at<float>(i,j))*255.0/8.0;
+                }else{
+                    src_gray.at<unsigned char>(i,j)=0;
+                }
+
+                if(val<(cv_ptr->image.at<float>(i,j))){
+                  val=(cv_ptr->image.at<float>(i,j));
+                }
             }else{
                 src_gray.at<unsigned char>(i,j)=0;
             }
-
-            if(val<(cv_ptr->image.at<unsigned short>(i,j))){
-              val=(cv_ptr->image.at<unsigned short>(i,j));
-            }
         }
     }
-    ROS_INFO("%u",val);
+    ROS_INFO("%f",val);
 
   //  cvtColor( src, src_gray, CV_BGR2GRAY );
     ImageConverter::findCircle(src_gray,msg);
@@ -104,7 +108,7 @@ public:
       int numCircle1, numCircle2;
       /// Save the file in catkin_ws folder
       /// Remove the file or rename it in the folder if you want a new data file.
-      fichier = fopen("test.csv", "a+");
+      fichier = fopen("test_depth.csv", "a+");
       if(circles.size()>=2 && circles.size()<10){
           diff=1000000;
           /// find two circles in the circles array who have the smallest radius difference
@@ -143,8 +147,8 @@ public:
            // circle outline
            circle( src_gray, center2, radius, cv::Scalar(0,0,255), 3, 8, 0 );
            /// min is the minimum of rang to delete the background for the next frame (I put 30cm arround the sphere)
-           min= (src_gray.at<unsigned char>(cvRound(circles[numCircle1][0]),cvRound(circles[numCircle1][1]))+src_gray.at<unsigned char>(cvRound(circles[numCircle2][0]), cvRound(circles[numCircle2][1]))/2)-2000;
-           max=(src_gray.at<unsigned char>(cvRound(circles[numCircle1][0]),cvRound(circles[numCircle1][1]))+src_gray.at<unsigned char>(cvRound(circles[numCircle2][0]), cvRound(circles[numCircle2][1]))/2)+2000;
+           min= (src_gray.at<unsigned char>(cvRound(circles[numCircle1][0]),cvRound(circles[numCircle1][1]))+src_gray.at<unsigned char>(cvRound(circles[numCircle2][0]), cvRound(circles[numCircle2][1]))/2)-1.0;
+           max=(src_gray.at<unsigned char>(cvRound(circles[numCircle1][0]),cvRound(circles[numCircle1][1]))+src_gray.at<unsigned char>(cvRound(circles[numCircle2][0]), cvRound(circles[numCircle2][1]))/2)+1.0;
          }
       }
     }
