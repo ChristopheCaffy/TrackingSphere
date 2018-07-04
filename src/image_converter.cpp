@@ -84,7 +84,7 @@ public:
     ROS_INFO("%f",val);
 
   //  cvtColor( src, src_gray, CV_BGR2GRAY );
-    ImageConverter::findCircle(src_gray,msg);
+    ImageConverter::findCircle(src_gray,msg,cv_ptr);
     /// Show your result
     cv::imshow(OPENCV_WINDOW, src_gray);
     cv::waitKey(3);
@@ -93,14 +93,15 @@ public:
     //image_pub_.publish(cv_ptr->toImageMsg());
   }
 
-  void findCircle(cv::Mat &src_gray, const sensor_msgs::ImageConstPtr& msg){
+  void findCircle(cv::Mat &src_gray, const sensor_msgs::ImageConstPtr& msg,cv_bridge::CvImagePtr cv_ptr){
   /// Reduce the noise so we avoid false circle detection
       GaussianBlur(src_gray, src_gray, cv::Size(9, 9), 2, 2 );
+      //blur(src_gray, src_gray, cv::Size(3, 3));
 
       std::vector<cv::Vec3f> circles;
 
       /// Apply the Hough Transform to find the circles
-      HoughCircles( src_gray, circles, CV_HOUGH_GRADIENT, 1, src_gray.rows/8, 180, 30, 0, 0 );
+      HoughCircles( src_gray, circles, CV_HOUGH_GRADIENT, 1, src_gray.rows/8, 100, 25, 0, 0 );
       /// Draw the circles detected
       int diff;
       /// Data file to save all circle datas+timestamp
@@ -147,8 +148,8 @@ public:
            // circle outline
            circle( src_gray, center2, radius, cv::Scalar(0,0,255), 3, 8, 0 );
            /// min is the minimum of rang to delete the background for the next frame (I put 30cm arround the sphere)
-           min= (src_gray.at<unsigned char>(cvRound(circles[numCircle1][0]),cvRound(circles[numCircle1][1]))+src_gray.at<unsigned char>(cvRound(circles[numCircle2][0]), cvRound(circles[numCircle2][1]))/2)-1.0;
-           max=(src_gray.at<unsigned char>(cvRound(circles[numCircle1][0]),cvRound(circles[numCircle1][1]))+src_gray.at<unsigned char>(cvRound(circles[numCircle2][0]), cvRound(circles[numCircle2][1]))/2)+1.0;
+           //min= (cv_ptr->image.at<float>(cvRound(circles[numCircle1][0]),cvRound(circles[numCircle1][1]))+cv_ptr->image.at<float>(cvRound(circles[numCircle2][0]), cvRound(circles[numCircle2][1]))/2)-1.0;
+           //max=(cv_ptr->image.at<float>(cvRound(circles[numCircle1][0]),cvRound(circles[numCircle1][1]))+cv_ptr->image.at<float>(cvRound(circles[numCircle2][0]), cvRound(circles[numCircle2][1]))/2)+1.0;
          }
       }
     }
